@@ -1,7 +1,7 @@
+import pandas as pd
 
 
 class Graph(object):
-
     # Initialize the matrix
     def __init__(self, size):
         self.adjMatrix = []
@@ -25,15 +25,20 @@ class Graph(object):
         self.adjMatrix[v1][v2] = 0
         self.adjMatrix[v2][v1] = 0
 
+    def copy(self):
+        copy = Graph(self.size)
+        for row in range(self.size):
+            for col in range(self.size):
+                copy.adjMatrix[row][col] = self.adjMatrix[row][col]
+        return copy
+
     def __len__(self):
         return self.size
 
     # Print the matrix
     def print_matrix(self):
-        for row in self.adjMatrix:
-            for val in row:
-                print('{:4}'.format(val)),
-            print()
+        df = pd.DataFrame(self.adjMatrix)
+        print(df)
 
     def get_edges(self):
         edges = []
@@ -64,7 +69,7 @@ class Graph(object):
             max_degree = max(max_degree, m[i])
         return max_degree
 
-    def colour_edges(self, edges, num_colours):
+    def vizing_colouring(self, edges, num_colours):
         # Assign a colour to every edge 'i'
         for i in range(num_colours):
             colour = 1
@@ -110,44 +115,13 @@ class Graph(object):
         line = linenum
 
 
-def main():
-    g = Graph(8)
-    g.add_edge(0, 1)
-    g.add_edge(0, 4)
-    g.add_edge(0, 7)
-    g.add_edge(1, 2)
-    g.add_edge(1, 3)
-    g.add_edge(1, 5)
-    g.add_edge(1, 7)
-    g.add_edge(2, 3)
-    g.add_edge(3, 6)
-    g.add_edge(3, 7)
-    g.add_edge(5, 6)
-    g.add_edge(6, 7)
-
+def test(g):
     edges = g.get_edges()
     max_degree = g.max_degree(edges)
     print("Max degree: " + str(max_degree))
-    coloured_edges = g.colour_edges(edges, len(edges))
+    coloured_edges = g.vizing_colouring(edges, len(edges))
+    print("Coloured edges:")
     print(coloured_edges)
     # every simple undirected graph may be edge colored with d+1 colours given a graph with a max degree 'd'
-    assert max_degree+1 >= g.num_colours(edges)
-
-    h = Graph(4)
-    h.add_edge(0, 1)
-    h.add_edge(1, 2)
-    h.add_edge(2, 3)
-    h.add_edge(3, 0)
-    h.add_edge(3, 1)
-
-    edges = h.get_edges()
-    max_degree = h.max_degree(edges)
-    print("Max degree: " + str(max_degree))
-    coloured_edges = h.colour_edges(edges, len(edges))
-    print(coloured_edges)
-    # every simple undirected graph may be edge colored with d+1 colours given a graph with a max degree 'd'
-    assert max_degree+1 >= h.num_colours(edges)
-
-
-if __name__ == '__main__':
-    main()
+    assert max_degree + 1 >= g.num_colours(edges)
+    return edges

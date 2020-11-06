@@ -1,0 +1,11 @@
+.gitignore
+.idea/.gitignore
+.idea/.name
+.idea/MATCHA.iml
+.idea/dictionaries/
+.idea/inspectionProfiles/
+.idea/libraries/
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+__pycache__/

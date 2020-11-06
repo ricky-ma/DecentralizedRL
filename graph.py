@@ -1,4 +1,4 @@
-import pandas as pd
+import numpy as np
 
 
 class Graph(object):
@@ -37,8 +37,8 @@ class Graph(object):
 
     # Print the matrix
     def print_matrix(self):
-        df = pd.DataFrame(self.adjMatrix)
-        print(df)
+        array = np.asarray(self.adjMatrix)
+        print(array)
 
     def get_edges(self):
         edges = []
@@ -113,15 +113,3 @@ class Graph(object):
     def goto(linenum):
         global line
         line = linenum
-
-
-def test(g):
-    edges = g.get_edges()
-    max_degree = g.max_degree(edges)
-    print("Max degree: " + str(max_degree))
-    coloured_edges = g.vizing_colouring(edges, len(edges))
-    print("Coloured edges:")
-    print(coloured_edges)
-    # every simple undirected graph may be edge colored with d+1 colours given a graph with a max degree 'd'
-    assert max_degree + 1 >= g.num_colours(edges)
-    return edges

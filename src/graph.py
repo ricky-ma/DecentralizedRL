@@ -1,4 +1,76 @@
+import matlab.engine
 import numpy as np
+
+
+def gen_graph(gtype, N, p):
+    eng = matlab.engine.start_matlab()
+    mix_matrix = np.asarray(eng.gen_graph(gtype, N, p))
+    print(mix_matrix)
+    G = Graph(len(mix_matrix))
+    for row in range(len(mix_matrix)):
+        for col in range(len(mix_matrix)):
+            if mix_matrix[row][col] > 0.0:
+                G.add_edge(row, col)
+    return mix_matrix, G
+
+
+def decompose(mix_matrix, G):
+    E = G.get_edges()
+    max_degree = G.max_degree(E)
+    print("Max degree: " + str(max_degree))
+    coloured_edges = G.vizing_colouring(E, len(E))
+    print("Coloured edges:")
+    print(coloured_edges)
+
+    decompositions = []
+    colours = G.num_colours(E)
+    for colour in range(1, colours+1):
+        subgraph = G.copy()
+        for edge in E:
+            if edge[2] != colour:
+                subgraph.remove_edge(edge[0], edge[1])
+        decompositions.append(subgraph)
+
+    result = []
+    for graph in decompositions:
+        for v1 in range(len(mix_matrix)):
+            for v2 in range(len(mix_matrix)):
+                if graph.adjMatrix[v1][v2] != 0:
+                    graph.adjMatrix[v1][v2] = mix_matrix[v1][v2]
+        result.append(graph)
+    return result
+
+
+def graph_test():
+    g = Graph(8)
+    g.add_edge(0, 1)
+    g.add_edge(0, 4)
+    g.add_edge(0, 7)
+    g.add_edge(1, 2)
+    g.add_edge(1, 3)
+    g.add_edge(1, 5)
+    g.add_edge(1, 7)
+    g.add_edge(2, 3)
+    g.add_edge(3, 6)
+    g.add_edge(3, 7)
+    g.add_edge(5, 6)
+    g.add_edge(6, 7)
+
+    subg = decompose(g, g)
+    for i, g in enumerate(subg):
+        print("Color: " + str(i + 1))
+        g.print_matrix()
+
+    h = Graph(4)
+    h.add_edge(0, 1)
+    h.add_edge(1, 2)
+    h.add_edge(2, 3)
+    h.add_edge(3, 0)
+    h.add_edge(3, 1)
+    subg = decompose(h, h)
+    for i, g in enumerate(subg):
+        print("Color: " + str(i + 1))
+        g.print_matrix()
 
 
 class Graph(object):

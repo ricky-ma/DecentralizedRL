@@ -18,12 +18,12 @@ def decompose(mix_matrix, G):
     E = G.get_edges()
     max_degree = G.max_degree(E)
     print("Max degree: " + str(max_degree))
-    coloured_edges = G.vizing_colouring(E, len(E))
+    coloured_edges = vizing_colouring(E, len(E))
     print("Coloured edges:")
     print(coloured_edges)
 
     decompositions = []
-    colours = G.num_colours(E)
+    colours = num_colours(E)
     for colour in range(1, colours+1):
         subgraph = G.copy()
         for edge in E:
@@ -71,6 +71,52 @@ def graph_test():
     for i, g in enumerate(subg):
         print("Color: " + str(i + 1))
         g.print_matrix()
+
+
+def goto(linenum):
+    global line
+    line = linenum
+
+
+def vizing_colouring(edges, n_colours):
+    # Assign a colour to every edge 'i'
+    for i in range(n_colours):
+        colour = 1
+        global line
+        line = 1
+        while True:
+            if line == 1:
+                # Assign a colour and then check validity
+                edges[i][2] = colour
+                for j in range(n_colours):
+                    if i == j:
+                        continue
+                    # If the colour of edges is adjacent to edge i
+                    if (
+                        edges[i][0] == edges[j][0] or
+                        edges[i][1] == edges[j][0] or
+                        edges[i][0] == edges[j][1] or
+                        edges[i][1] == edges[j][1]
+                    ):
+                        # If colour matches
+                        if edges[i][2] == edges[j][2]:
+                            # Increment the colour, denotes change in colour
+                            colour += 1
+                            # Go back and assign next colour
+                            goto(1)
+                            break
+                else:
+                    goto(0)
+                    break
+    return edges
+
+
+def num_colours(edges):
+    max_colour = 1
+    for edge in edges:
+        if edge[2] > max_colour:
+            max_colour = edge[2]
+    return max_colour
 
 
 class Graph(object):
@@ -140,48 +186,3 @@ class Graph(object):
         for i in range(n):
             max_degree = max(max_degree, m[i])
         return max_degree
-
-    def vizing_colouring(self, edges, num_colours):
-        # Assign a colour to every edge 'i'
-        for i in range(num_colours):
-            colour = 1
-            global line
-            line = 1
-            while True:
-                if line == 1:
-                    # Assign a colour and then check validity
-                    edges[i][2] = colour
-                    for j in range(num_colours):
-                        if i == j:
-                            continue
-                        # If the colour of edges is adjacent to edge i
-                        if (
-                            edges[i][0] == edges[j][0] or
-                            edges[i][1] == edges[j][0] or
-                            edges[i][0] == edges[j][1] or
-                            edges[i][1] == edges[j][1]
-                        ):
-                            # If colour matches
-                            if edges[i][2] == edges[j][2]:
-                                # Increment the colour, denotes change in colour
-                                colour += 1
-                                # Go back and assign next colour
-                                self.goto(1)
-                                break
-                    else:
-                        self.goto(0)
-                        break
-        return edges
-
-    @staticmethod
-    def num_colours(edges):
-        max_colour = 1
-        for edge in edges:
-            if edge[2] > max_colour:
-                max_colour = edge[2]
-        return max_colour
-
-    @staticmethod
-    def goto(linenum):
-        global line
-        line = linenum

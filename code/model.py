@@ -28,11 +28,11 @@ class TD:
         self.z = np.zeros(self.n)
 
     def get_value(self, s):
-        """Get the approximate value for feature vector `x`."""
+        """Get the approximate value for feature vector `phi`."""
         return np.dot(self.w, s)
 
     def update(self, b, phi, r, phip, eta):
-        """Update from new experience, i.e. from a transition `(x,r,xp)`.
+        """Update from new experience.
         Parameters
         ----------
         b: Vector[float]
@@ -50,11 +50,8 @@ class TD:
         delta : float
             The temporal difference error from the update.
         """
-        # delta = r + gm_p*np.dot(self.w, phip) - np.dot(self.w, phi)
-        # self.z = phi + gm*lm*self.z
-        # self.w += eta*delta*self.z
-        delta = 0
-        # TODO: implement updates
+        delta = b * (self.w + eta * phi * (r + np.dot(phip - phi, self.w)))
+        self.w += delta
         return delta
 
     def reset(self):

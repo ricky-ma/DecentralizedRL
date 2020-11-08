@@ -1,5 +1,5 @@
-# MATCHA
-Python implementation of MATCHA: matching decomposition sampling strategy
+# DecentralizedRL
+Decentralized Reinforcement Learning Over Randomly Reshuffled Topology
 
 ## References:
 https://www.cs.utexas.edu/users/misra/psp.dir/vizing.pdf

@@ -51,13 +51,12 @@ class TD:
             The temporal difference error from the update.
         """
         # TODO: debug update
-        temp = (r + np.dot(phip - phi, self.w))
-        print(temp.shape)
-        print(temp)
-        print(phi.shape)
-        print(phip.shape)
-        delta = b * (self.w + (eta * phi) * temp)
+        # print(b)
+        temp = self.w + eta*phi*(r + np.dot(phip - phi, self.w))
+        # print(temp)
+        delta = b * temp
         self.w += delta
+        print(self.w)
         return delta
 
     def reset(self):

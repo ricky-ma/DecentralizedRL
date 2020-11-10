@@ -7,7 +7,7 @@ from scipy.special import softmax
 '''
 simulation setup
 '''
-NUM_AGENTS = 6  # number of agents
+NUM_AGENTS = 10  # number of agents
 NUM_ACTIONS = 3  # actions per agent
 TOTAL_ACTIONS = int(np.power(NUM_ACTIONS, NUM_AGENTS))  # total actions
 TOTAL_STATES = 20  # total states
@@ -47,56 +47,52 @@ feature = feature / feature_vec_norm
 
 def train(eta=STEPSIZE, B=subgraphs, phi=feature):
     # TODO
-    init_weight = np.zeros((DIM_FEATURES, NUM_AGENTS))
     init_state = INIT_STATE
-    init_reward = 0
-    init_phi = feature
-    init_phip = 0
-
-    model = TD(len(feature))
-    model.w = init_weight
+    model = TD(DIM_FEATURES)
 
     N = subgraphs[0].size
-    for subgraph in B:
+    for k, subgraph in enumerate(B):
         print(subgraph)
         # model.update(b=subgraph, phi=init_phi, phip=init_phip, r=init_reward, eta=eta)
-        for n in range(N-1):
-            print("iteration: " + str(n+1))
+        for row in range(N):
+            for col in range(N):
+                b = np.asarray(subgraph.adjMatrix)[row][col]
+                if b > 0:
+                    print("iteration: " + str(row) + "," + str(col))
 
-            # find action
-            rnd_tos = random.uniform(0, 1)
-            idx_action_curr = np.argwhere(rnd_tos <= cdf_prob_as)[0][0]
-            idx_state_curr = init_state
+                    # find action
+                    rnd_tos = random.uniform(0, 1)
+                    idx_action_curr = np.argwhere(rnd_tos <= cdf_prob_as)[0][0]
+                    idx_state_curr = init_state
 
-            # 4.2 find next state
-            cdf_prob_ssa = np.cumsum(mtx_prob_ssa[:, idx_state_curr, idx_action_curr])
-            rnd_tos = random.uniform(0, 1)
-            idx_state_next = np.argwhere(rnd_tos <= cdf_prob_ssa)[0][0]
+                    # 4.2 find next state
+                    cdf_prob_ssa = np.cumsum(mtx_prob_ssa[:, idx_state_curr, idx_action_curr])
+                    rnd_tos = random.uniform(0, 1)
+                    idx_state_next = np.argwhere(rnd_tos <= cdf_prob_ssa)[0][0]
 
-            # 4.3 find next action
-            range_phi = (idx_state_next-1) * TOTAL_ACTIONS + np.arange(0, TOTAL_ACTIONS)
-            idx_action_pred = np.zeros((NUM_AGENTS, 1))
-            print(range_phi.shape)
-            print(feature[:, range_phi].conj().T.shape)
-            print(init_weight.shape)
-            # for jj in range(NUM_AGENTS):
-            #     print(jj)
-            #     idx_action_pred[jj] = np.argmax(feature[:, range_phi].conj().T @ init_weight[:, jj])
-            idx_action_pred = np.argmax(feature[:, range_phi].conj().T @ init_weight)
-            idx_feature_curr = (idx_state_curr-1)*TOTAL_ACTIONS + idx_action_curr
-            idx_feature_pred = (idx_state_next-1)*TOTAL_ACTIONS + idx_action_pred
+                    # 4.3 find next action
+                    range_phi = (idx_state_next-1) * TOTAL_ACTIONS + np.arange(0, TOTAL_ACTIONS)
+                    # idx_action_pred = np.zeros((NUM_AGENTS, 1))
+                    # print(range_phi.shape)
+                    # print(feature[:, range_phi].conj().T.shape)
+                    # for jj in range(NUM_AGENTS):
+                    #     print(jj)
+                    #     idx_action_pred[jj] = np.argmax(feature[:, range_phi].conj().T @ init_weight[:, jj])
+                    idx_action_pred = np.argmax(feature[:, range_phi].conj().T @ model.w)
+                    idx_feature_curr = (idx_state_curr-1)*TOTAL_ACTIONS + idx_action_curr
+                    idx_feature_pred = (idx_state_next-1)*TOTAL_ACTIONS + idx_action_pred
 
-            print(idx_feature_curr.shape)
-            print(idx_feature_curr)
-            print(idx_action_pred.shape)
-            print(idx_action_pred)
-            print(idx_feature_pred.shape)
-            print(idx_feature_pred)
+                    # print(idx_feature_curr.shape)
+                    # print(idx_feature_curr)
+                    # print(idx_action_pred.shape)
+                    # print(idx_action_pred)
+                    # print(idx_feature_pred.shape)
+                    # print(idx_feature_pred)
 
-            reward = reward_as[idx_feature_curr, n]
-            phi = feature[:, idx_feature_curr.astype(int)]
-            phip = feature[:, idx_feature_pred.astype(int)]
-            model.update(b=subgraph, phi=phi, phip=phip, r=reward, eta=eta)
+                    reward = reward_as[idx_feature_curr, k]
+                    phi = feature[:, idx_feature_curr.astype(int)]
+                    phip = feature[:, idx_feature_pred.astype(int)]
+                    model.update(b=b, phi=phi, phip=phip, r=reward, eta=eta)
 
 
 if __name__ == '__main__':

@@ -45,54 +45,49 @@ feature_vec_norm = linalg.norm(feature, ord=2, axis=1)[:, np.newaxis]
 feature = feature / feature_vec_norm
 
 
-def train(eta=STEPSIZE, B=subgraphs, phi=feature):
-    # TODO
+def train(eta=STEPSIZE, B=subgraphs):
+    # TODO: debug training, matrix/vector multiplications
     init_state = INIT_STATE
     model = TD(DIM_FEATURES)
 
-    N = subgraphs[0].size
     for k, subgraph in enumerate(B):
         print(subgraph)
         # model.update(b=subgraph, phi=init_phi, phip=init_phip, r=init_reward, eta=eta)
-        for row in range(N):
-            for col in range(N):
-                b = np.asarray(subgraph.adjMatrix)[row][col]
-                if b > 0:
-                    print("iteration: " + str(row) + "," + str(col))
+        print("subgraph: " + str(k))
 
-                    # find action
-                    rnd_tos = random.uniform(0, 1)
-                    idx_action_curr = np.argwhere(rnd_tos <= cdf_prob_as)[0][0]
-                    idx_state_curr = init_state
+        # find action
+        rnd_tos = random.uniform(0, 1)
+        idx_action_curr = np.argwhere(rnd_tos <= cdf_prob_as)[0][0]
+        idx_state_curr = init_state
 
-                    # 4.2 find next state
-                    cdf_prob_ssa = np.cumsum(mtx_prob_ssa[:, idx_state_curr, idx_action_curr])
-                    rnd_tos = random.uniform(0, 1)
-                    idx_state_next = np.argwhere(rnd_tos <= cdf_prob_ssa)[0][0]
+        # 4.2 find next state
+        cdf_prob_ssa = np.cumsum(mtx_prob_ssa[:, idx_state_curr, idx_action_curr])
+        rnd_tos = random.uniform(0, 1)
+        idx_state_next = np.argwhere(rnd_tos <= cdf_prob_ssa)[0][0]
 
-                    # 4.3 find next action
-                    range_phi = (idx_state_next-1) * TOTAL_ACTIONS + np.arange(0, TOTAL_ACTIONS)
-                    # idx_action_pred = np.zeros((NUM_AGENTS, 1))
-                    # print(range_phi.shape)
-                    # print(feature[:, range_phi].conj().T.shape)
-                    # for jj in range(NUM_AGENTS):
-                    #     print(jj)
-                    #     idx_action_pred[jj] = np.argmax(feature[:, range_phi].conj().T @ init_weight[:, jj])
-                    idx_action_pred = np.argmax(feature[:, range_phi].conj().T @ model.w)
-                    idx_feature_curr = (idx_state_curr-1)*TOTAL_ACTIONS + idx_action_curr
-                    idx_feature_pred = (idx_state_next-1)*TOTAL_ACTIONS + idx_action_pred
+        # 4.3 find next action
+        range_phi = (idx_state_next-1) * TOTAL_ACTIONS + np.arange(0, TOTAL_ACTIONS)
+        # idx_action_pred = np.zeros((NUM_AGENTS, 1))
+        # print(range_phi.shape)
+        # print(feature[:, range_phi].conj().T.shape)
+        # for jj in range(NUM_AGENTS):
+        #     print(jj)
+        #     idx_action_pred[jj] = np.argmax(feature[:, range_phi].conj().T @ init_weight[:, jj])
+        idx_action_pred = np.argmax(feature[:, range_phi].conj().T @ model.w)
+        idx_feature_curr = (idx_state_curr-1)*TOTAL_ACTIONS + idx_action_curr
+        idx_feature_pred = (idx_state_next-1)*TOTAL_ACTIONS + idx_action_pred
 
-                    # print(idx_feature_curr.shape)
-                    # print(idx_feature_curr)
-                    # print(idx_action_pred.shape)
-                    # print(idx_action_pred)
-                    # print(idx_feature_pred.shape)
-                    # print(idx_feature_pred)
+        # print(idx_feature_curr.shape)
+        # print(idx_feature_curr)
+        # print(idx_action_pred.shape)
+        # print(idx_action_pred)
+        # print(idx_feature_pred.shape)
+        # print(idx_feature_pred)
 
-                    reward = reward_as[idx_feature_curr, k]
-                    phi = feature[:, idx_feature_curr.astype(int)]
-                    phip = feature[:, idx_feature_pred.astype(int)]
-                    model.update(b=b, phi=phi, phip=phip, r=reward, eta=eta)
+        reward = reward_as[idx_feature_curr, k]
+        phi = feature[:, idx_feature_curr.astype(int)]
+        phip = feature[:, idx_feature_pred.astype(int)]
+        model.update(subgraph=subgraph, phi=phi, phip=phip, r=reward, eta=eta)
 
 
 if __name__ == '__main__':
@@ -102,6 +97,4 @@ if __name__ == '__main__':
     for i, graph in enumerate(subgraphs):
         print("Color: " + str(i + 1))
         graph.print_matrix()
-    print("hello")
-
     train()

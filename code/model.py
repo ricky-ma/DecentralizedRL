@@ -31,11 +31,11 @@ class TD:
         """Get the approximate value for feature vector `phi`."""
         return np.dot(self.w, s)
 
-    def update(self, b, phi, r, phip, eta):
+    def update(self, subgraph, phi, r, phip, eta):
         """Update from new experience.
         Parameters
         ----------
-        b: Vector[float]
+        subgraph: Vector[float]
             The n*n mixing matrix from the current timestep.
         phi : Vector[float]
             The observation/features from the current timestep.
@@ -50,12 +50,14 @@ class TD:
         delta : float
             The temporal difference error from the update.
         """
-        # TODO: debug update
-        # print(b)
-        temp = self.w + eta*phi*(r + np.dot(phip - phi, self.w))
-        # print(temp)
-        delta = b * temp
-        self.w += delta
+        temp = self.w + eta * phi * (r + np.dot(phip - phi, self.w))
+        delta = np.zeros(self.w.shape)
+        for row in range(subgraph.size):
+            for col in range(subgraph.size):
+                b = np.asarray(subgraph.adjMatrix)[row][col]
+                if b > 0:
+                    delta += b * temp
+        self.w = delta
         print(self.w)
         return delta
 

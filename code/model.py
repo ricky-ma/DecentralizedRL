@@ -50,7 +50,13 @@ class TD:
         delta : float
             The temporal difference error from the update.
         """
-        delta = b * (self.w + eta * phi * (r + np.dot(phip - phi, self.w)))
+        # TODO: debug update
+        temp = (r + np.dot(phip - phi, self.w))
+        print(temp.shape)
+        print(temp)
+        print(phi.shape)
+        print(phip.shape)
+        delta = b * (self.w + (eta * phi) * temp)
         self.w += delta
         return delta
 

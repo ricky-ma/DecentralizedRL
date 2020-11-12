@@ -31,7 +31,6 @@ class TD:
         self.INIT_STATE = np.random.randint(self.TOTAL_STATES)
         self.TOTAL_SAMPLES = 1e6
         self.DISCOUNT = 0.5
-        self.WEIGHT = np.zeros((self.DIM_FEATURES, self.NUM_AGENTS))
 
         '''
         sample generation
@@ -44,8 +43,6 @@ class TD:
         self.vec_prob_as = softmax(self.VEC_EPSILON)
         self.cdf_prob_as = np.cumsum(self.vec_prob_as)
 
-        # self.z = np.mean(self.w, 2)
-
         '''
         feature generation
         '''
@@ -53,15 +50,18 @@ class TD:
         feature_vec_norm = np.linalg.norm(self.feature, ord=2, axis=1)[:, np.newaxis]
         self.feature = self.feature / feature_vec_norm
 
-    def get_value(self, s):
-        """Get the approximate value for feature vector `phi`."""
-        return np.dot(self.WEIGHT, s)
+        '''
+        weight + error traces
+        '''
+        self.WEIGHT = np.zeros((self.DIM_FEATURES, self.NUM_AGENTS))
+        self.WW_STAR = self.WEIGHT.mean(axis=1)
+        self.ERROR = np.empty(shape=(1,))
 
     def update(self, subgraph, idx_feature_curr, idx_feature_pred, eta):
         """Update from new experience.
         Parameters
         ----------
-        subgraph: Vector[float]
+        subgraph: Matrix[float]
             The n*n mixing matrix from the current timestep.
         idx_feature_curr : int
             Index of current feature vector.
@@ -71,12 +71,11 @@ class TD:
             The step-size parameter for updating the weight vector.
         Returns
         -------
-        delta : float
+        error : float
             The temporal difference error from the update.
         """
 
-        delta = np.zeros(self.WEIGHT.shape)
-
+        ww_vec = np.empty(shape=(self.DIM_FEATURES, self.NUM_AGENTS))
         for agent in range(subgraph.size):
             r = self.reward_as[idx_feature_curr, agent]
             phi = self.feature[:, idx_feature_curr]
@@ -87,11 +86,13 @@ class TD:
             for col in range(subgraph.size):
                 b = np.asarray(subgraph.adjMatrix)[agent][col]
                 if b > 0:
-                    delta[:, agent] += b * temp
+                    ww_vec[:, agent] = b * temp
 
-        self.WEIGHT += delta
-        print(self.WEIGHT)
-        return delta
+        error = np.linalg.norm(self.WEIGHT - ww_vec * np.ones((1, self.NUM_AGENTS)), ord='fro') ** 2
+        error = error / self.NUM_AGENTS
+        self.ERROR = np.append(self.ERROR, values=[error])
+        self.WEIGHT = ww_vec
+        return error
 
     # def reset(self):
     #     """Reset weights, traces, and other parameters."""

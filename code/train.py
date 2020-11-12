@@ -1,18 +1,21 @@
 from code import graph
 from code.model import TD
 import numpy as np
-
-# TODO: implement error tracing
-# ww_star = np.mean(init_weight, 2)
+import matplotlib.pyplot as plt
 
 
-def train(num_agents, subgraphs, eta=0.005):
-    model = TD(subgraphs)
-    for sample in range(int(model.TOTAL_SAMPLES)):
+def train(model, num_agents, subgraphs, verbose=0, iterations=100):
+    # for sample in range(int(model.TOTAL_SAMPLES)):
+    for sample in range(iterations):
         init_state = model.INIT_STATE
+        # eta = 100/(sample + 3e5)/(1+model.DISCOUNT)
+        eta = 0.00001
+        if verbose >= 1:
+            print("Iteration: {}".format(sample))
+            print("Stepsize: {}".format(eta))
         for k, subgraph in enumerate(subgraphs):
-            print(subgraph)
-            print("subgraph: " + str(k))
+            if verbose >= 2:
+                print("    Subgraph: {}".format(k))
 
             # find current action, state
             rnd_tos = np.random.uniform(0, 1)
@@ -45,14 +48,19 @@ def train(num_agents, subgraphs, eta=0.005):
                          idx_feature_curr=idx_feature_curr,
                          idx_feature_pred=idx_feature_pred.astype(int),
                          eta=eta)
+            if verbose >= 2:
+                print("    Error: {}".format(model.ERROR[-1]))
             model.INIT_STATE = idx_state_next
 
 
 if __name__ == '__main__':
     mix_matrix, G = graph.gen_graph('ER', 10, 0.7)
     G.print_matrix()
-    subgraphs = graph.decompose(mix_matrix, G)
-    for i, graph in enumerate(subgraphs):
-        print("Color: " + str(i + 1))
+    SG = graph.decompose(mix_matrix, G)
+    for i, graph in enumerate(SG):
+        print("Color: {}".format(i + 1))
         graph.print_matrix()
-    train(num_agents=G.size, subgraphs=subgraphs)
+    td_model = TD(SG)
+    train(model=td_model, num_agents=G.size, subgraphs=SG, verbose=2, iterations=25)
+    plt.plot(td_model.ERROR)
+    plt.show()

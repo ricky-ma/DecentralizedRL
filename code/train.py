@@ -1,66 +1,50 @@
 from code import graph
-from code.model import TD
+from code.model import DecentralizedTD
 import numpy as np
 import matplotlib.pyplot as plt
 
 
-def train(model, num_agents, subgraphs, verbose=0, iterations=100):
-    # for sample in range(int(model.TOTAL_SAMPLES)):
-    for sample in range(iterations):
-        init_state = model.INIT_STATE
-        # eta = 100/(sample + 3e5)/(1+model.DISCOUNT)
+def train(model, verbose=0, iterations=100):
+    for k in range(iterations):
+        # eta = 100/(k + 3e5)/(1+model.DISCOUNT_GAMMA)
         eta = 0.00001
         if verbose >= 1:
-            print("Iteration: {}".format(sample))
+            print("Subgraph epoch: {}".format(k))
             print("Stepsize: {}".format(eta))
-        for k, subgraph in enumerate(subgraphs):
-            if verbose >= 2:
-                print("    Subgraph: {}".format(k))
 
-            # find current action, state
-            rnd_tos = np.random.uniform(0, 1)
-            idx_action_curr = np.argwhere(rnd_tos <= model.cdf_prob_as)[0][0]
-            idx_state_curr = init_state
+        for m, subgraph in enumerate(model.SUBGRAPHS):
+            if verbose >= 2:
+                print("    Subgraph: {}".format(m))
 
             # find next state
-            cdf_prob_ssa = np.cumsum(model.mtx_prob_ssa[:, idx_state_curr, idx_action_curr])
+            cdf_prob_ssa = np.cumsum(model.mtx_prob_ssa[:, model.STATE])
             rnd_tos = np.random.uniform(0, 1)
-            idx_state_next = np.argwhere(rnd_tos <= cdf_prob_ssa)[0][0]
+            idx_state_next = np.nonzero(rnd_tos <= cdf_prob_ssa)[0][0]
 
-            # find next action
-            range_phi = (idx_state_next - 1) * model.TOTAL_ACTIONS + np.arange(0, model.TOTAL_ACTIONS)
-            idx_action_pred = np.empty(shape=(num_agents, 1))
-            for agent in range(num_agents):
-                idx_action_pred[agent] = np.argmax(model.feature[:, range_phi].conj().T @ model.WEIGHT[:, agent])
-
-            idx_feature_curr = (idx_state_curr - 1) * model.TOTAL_ACTIONS + idx_action_curr
-            idx_feature_pred = (idx_state_next - 1) * model.TOTAL_ACTIONS + idx_action_pred
-
-            # print(idx_feature_curr.shape)
-            # print(idx_feature_curr)
-            # print(idx_action_pred.shape)
-            # print(idx_action_pred)
-            # print(idx_feature_pred.shape)
-            # print(idx_feature_pred)
+            phi = model.feature[:, model.STATE]
+            phip = model.feature[:, idx_state_next]
 
             # parameter updates
-            model.update(subgraph=subgraph,
-                         idx_feature_curr=idx_feature_curr,
-                         idx_feature_pred=idx_feature_pred.astype(int),
-                         eta=eta)
+            model.update(
+                subgraph=subgraph,
+                phi=phi,
+                phip=phip,
+                eta=eta
+            )
+            model.STATE = idx_state_next
             if verbose >= 2:
                 print("    Error: {}".format(model.ERROR[-1]))
-            model.INIT_STATE = idx_state_next
 
 
 if __name__ == '__main__':
-    mix_matrix, G = graph.gen_graph('ER', 10, 0.7)
+    mix_matrix, G = graph.gen_graph('ER', 50, 0.7)
     G.print_matrix()
-    SG = graph.decompose(mix_matrix, G)
-    for i, graph in enumerate(SG):
-        print("Color: {}".format(i + 1))
-        graph.print_matrix()
-    td_model = TD(SG)
-    train(model=td_model, num_agents=G.size, subgraphs=SG, verbose=2, iterations=25)
-    plt.plot(td_model.ERROR)
+    # SG = graph.decompose(mix_matrix, G)
+    # for i, graph in enumerate(SG):
+    #     print("Color: {}".format(i + 1))
+    #     graph.print_matrix()
+    # SG = [G]
+    td_model = DecentralizedTD([G])
+    train(model=td_model, verbose=2, iterations=100)
+    plt.semilogx(td_model.ERROR)
     plt.show()

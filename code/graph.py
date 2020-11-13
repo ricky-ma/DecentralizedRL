@@ -35,7 +35,7 @@ def decompose(mix_matrix, G):
     for graph in decompositions:
         for v1 in range(len(mix_matrix)):
             for v2 in range(len(mix_matrix)):
-                if graph.adjMatrix[v1][v2] != 0:
+                if graph.adjMatrix[v1][v2] != 0 or v1 == v2:
                     graph.adjMatrix[v1][v2] = mix_matrix[v1][v2]
         result.append(graph)
     return result

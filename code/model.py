@@ -20,13 +20,14 @@ class DecentralizedTD:
         simulation setup
         '''
         self.SUBGRAPHS = np.random.permutation(subgraphs)
-        self.NUM_AGENTS = self.SUBGRAPHS[0].size  # number of agents (size of adj matrix)
+        # self.NUM_AGENTS = self.SUBGRAPHS[0].shape[0]  # number of agents (size of adj matrix)
+        self.NUM_AGENTS = self.SUBGRAPHS[0].size
         self.NUM_ACTIONS = 3  # actions per agent
         self.TOTAL_STATES = 1000  # total states
         self.STATE = np.random.randint(self.TOTAL_STATES)
         self.DIM_FEATURES = 300  # value of d
-        self.TOTAL_SAMPLES = 1e6
-        self.DISCOUNT_GAMMA = 0.5
+        self.EPOCHS = 10
+        self.DISCOUNT_GAMMA = 0.9
 
         '''
         sample generation
@@ -47,12 +48,14 @@ class DecentralizedTD:
         weight + error traces
         '''
         self.WEIGHT = np.random.rand(self.DIM_FEATURES, self.NUM_AGENTS)
-        self.ERROR = np.empty((1, ))  # vector to store error
+        self.ERROR = np.zeros((self.EPOCHS*self.NUM_AGENTS, ))
 
-    def update(self, subgraph, phi, phip, eta):
+    def update(self, iteration, subgraph, phi, phip, eta):
         """Update from new experience.
         Parameters
         ----------
+        iteration: int
+            The current iteration.
         subgraph: Matrix[float]
             The n*n mixing matrix from the current timestep.
         phi : Vector[float]
@@ -69,17 +72,19 @@ class DecentralizedTD:
         WEIGHT_next = np.zeros_like(self.WEIGHT)
         for agentn in range(self.NUM_AGENTS):
             for agentnn in range(self.NUM_AGENTS):
+                # b = subgraph[agentn][agentnn]
                 b = np.asarray(subgraph.adjMatrix)[agentn][agentnn]
                 r = self.reward_as[self.STATE, agentnn]
                 wnn = self.WEIGHT[:, agentnn]
-                WEIGHT_next[:, agentn] += b*(wnn + eta * phi * (r + np.dot(phip - phi, wnn)))
+                delta = b * (wnn + eta * phi * (r + np.dot(phip - phi, wnn)))
+                WEIGHT_next[:, agentn] += delta
 
-        error = (np.linalg.norm(self.WEIGHT, ord='fro') ** 2) / self.NUM_AGENTS
-        self.ERROR = np.append(self.ERROR, values=[error])
         self.WEIGHT = WEIGHT_next
-        return self.ERROR
+        error = (np.linalg.norm(self.WEIGHT, ord='fro') ** 2) / self.NUM_AGENTS
+        self.ERROR[iteration] = error
+        return error
 
-    # def reset(self):
-    #     """Reset weights, traces, and other parameters."""
-    #     self.w = np.zeros(self.n)
-    #     self.z = np.zeros(self.n)
+    def reset(self):
+        """Reset weights and errors."""
+        self.WEIGHT = np.random.rand(self.DIM_FEATURES, self.NUM_AGENTS)
+        self.ERROR = np.zeros((self.EPOCHS*self.NUM_AGENTS, ))

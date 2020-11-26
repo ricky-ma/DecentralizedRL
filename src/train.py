@@ -1,14 +1,15 @@
-from code import graph
-from code.model import DecentralizedTD
+from src import graph
+from src.model import DecentralizedTD
 import numpy as np
 import matplotlib.pyplot as plt
+seed = 0
 
 
 def train(model, verbose=0):
-    iteration = 0
+    iteration = 1
     for k in range(model.EPOCHS):
         # eta = 100/(k + 3e5)/(1+model.DISCOUNT_GAMMA)
-        eta = 1e-5
+        eta = 1e-6
         if verbose >= 1:
             print("Subgraph epoch: {}".format(k))
             print("Stepsize: {}".format(eta))
@@ -20,6 +21,7 @@ def train(model, verbose=0):
 
             # find next state
             cdf_prob_ssa = np.cumsum(model.mtx_prob_ssa[:, model.STATE])
+            np.random.seed(seed)
             rnd_tos = np.random.uniform(0, 1)
             idx_state_next = np.where(rnd_tos <= cdf_prob_ssa)[0][0]
 
@@ -42,13 +44,26 @@ if __name__ == '__main__':
     # second curve: is our curve
     num_agent = 10
     mix_matrix, G = graph.gen_graph('ER', num_agent, 0.7)
-    G.print_matrix()
-    SG = graph.decompose(mix_matrix, G)
-    # for i, graph in enumerate(SG):
-    #     print("Color: {}".format(i + 1))
-    #     graph.print_matrix()
-    # SG = [mix_matrix]
-    td_model = DecentralizedTD(SG)
-    train(model=td_model, verbose=2)
-    plt.plot(td_model.ERROR)
+
+    decomposed = graph.decompose(mix_matrix, G)
+    subgraphs = []
+    for graph in decomposed:
+        subgraphs.append(np.asarray(graph.adjMatrix))
+
+    td_model_decomposed = DecentralizedTD(subgraphs)
+    train(model=td_model_decomposed, verbose=2)
+
+    td_model_vanilla = DecentralizedTD([mix_matrix])
+    train(model=td_model_vanilla, verbose=2)
+
+    iter_to_plot = td_model_vanilla.ERROR.shape[0]
+
+    plt.plot(td_model_decomposed.ERROR[:iter_to_plot], label="decomposed")
+    plt.plot(td_model_vanilla.ERROR, label="vanilla")
+    plt.xlabel("iteration")
+    plt.ylabel("error")
+    plt.legend()
     plt.show()
+
+    print(td_model_vanilla.WEIGHT)
+    print(td_model_decomposed.WEIGHT)

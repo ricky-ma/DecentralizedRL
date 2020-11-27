@@ -21,21 +21,21 @@ def train(model, verbose=0):
 
             # find next state
             cdf_prob_ssa = np.cumsum(model.mtx_prob_ssa[:, model.STATE])
-            np.random.seed(seed)
+            # np.random.seed(seed)
             rnd_tos = np.random.uniform(0, 1)
             idx_state_next = np.where(rnd_tos <= cdf_prob_ssa)[0][0]
 
             # parameter updates
-            error = model.update(
+            model.update(
                 iteration=iteration,
                 subgraph=subgraph,
                 phi=model.feature[:, model.STATE],
                 phip=model.feature[:, idx_state_next],
                 eta=eta
             )
-            model.STATE = idx_state_next
             if verbose >= 2:
-                print("    Error: {}".format(error))
+                print("    Error: {}".format(model.ERROR[iteration]))
+            model.STATE = idx_state_next
             iteration += 1
 
 
@@ -58,12 +58,19 @@ if __name__ == '__main__':
 
     iter_to_plot = td_model_vanilla.ERROR.shape[0]
 
-    plt.plot(td_model_decomposed.ERROR[:iter_to_plot], label="decomposed")
-    plt.plot(td_model_vanilla.ERROR, label="vanilla")
-    plt.xlabel("iteration")
-    plt.ylabel("error")
-    plt.legend()
-    plt.show()
+    fig, axs = plt.subplots(2)
+    fig.suptitle('Vertically stacked subplots')
+    axs[0].plot(td_model_decomposed.ERROR, label="decomposed")
+    axs[0].plot(td_model_vanilla.ERROR, label="vanilla")
+    axs[1].plot(td_model_decomposed.REWARD, label="decomposed")
+    axs[1].plot(td_model_vanilla.REWARD, label="vanilla")
+
+    axs[0].set(xlabel="iteration", ylabel="error")
+    axs[0].legend()
+    axs[1].set(xlabel="epoch", ylabel="reward")
+    axs[1].legend()
+
+    fig.show()
 
     print(td_model_vanilla.WEIGHT)
     print(td_model_decomposed.WEIGHT)

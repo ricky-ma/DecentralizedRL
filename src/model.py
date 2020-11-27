@@ -23,12 +23,10 @@ class DecentralizedTD:
         np.random.seed(seed)
         self.SUBGRAPHS = np.random.permutation(subgraphs)
         self.NUM_AGENTS = self.SUBGRAPHS[0].shape[0]  # number of agents (size of adj matrix)
-        self.NUM_ACTIONS = 3  # actions per agent
-        self.TOTAL_STATES = 1000  # total states
+        self.TOTAL_STATES = 100  # total states
         np.random.seed(seed)
         self.STATE = np.random.randint(self.TOTAL_STATES)
         np.random.seed(seed)
-        self.INIT_STATE = np.random.randint(self.TOTAL_STATES)
         self.DIM_FEATURES = 300  # value of d
         self.EPOCHS = 20
         self.DISCOUNT_GAMMA = 0.9
@@ -57,13 +55,14 @@ class DecentralizedTD:
         self.WEIGHT = np.random.rand(self.DIM_FEATURES, self.NUM_AGENTS)
         self.ERROR = np.zeros((self.EPOCHS * len(self.SUBGRAPHS) + 1, ))
         self.ERROR[0] = (np.linalg.norm(self.WEIGHT, ord='fro') ** 2) / self.NUM_AGENTS
+        self.REWARD = np.zeros((self.EPOCHS * len(self.SUBGRAPHS) + 1,))
 
     def update(self, iteration, subgraph, phi, phip, eta):
         """Update from new experience.
         Parameters
         ----------
         iteration: int
-            The current iteration.
+            The current iteration (timestep).
         subgraph: Matrix[float]
             The n*n mixing matrix from the current timestep.
         phi : Vector[float]
@@ -77,6 +76,7 @@ class DecentralizedTD:
         error : float
             The temporal difference error from the update.
         """
+        acc_reward = 0
         WEIGHT_next = np.zeros_like(self.WEIGHT)
         for agentn in range(self.NUM_AGENTS):
             for agentnn in range(self.NUM_AGENTS):
@@ -85,14 +85,15 @@ class DecentralizedTD:
                 wnn = self.WEIGHT[:, agentnn]
                 delta = b * (wnn + eta * phi * (r + np.dot(phip - phi, wnn)))
                 WEIGHT_next[:, agentn] += delta
+                acc_reward += r
 
         self.WEIGHT = WEIGHT_next
-        error = (np.linalg.norm(self.WEIGHT, ord='fro') ** 2) / self.NUM_AGENTS
-        self.ERROR[iteration] = error
-        return error
+        self.ERROR[iteration] = (np.linalg.norm(self.WEIGHT, ord='fro') ** 2) / self.NUM_AGENTS
+        self.REWARD[iteration] = self.REWARD[iteration-1] + acc_reward
 
     def reset(self):
         """Reset weights and errors."""
         np.random.seed(seed)
         self.WEIGHT = np.random.rand(self.DIM_FEATURES, self.NUM_AGENTS)
         self.ERROR = np.zeros((self.EPOCHS * len(self.SUBGRAPHS) + 1, ))
+        self.REWARD = np.zeros((self.EPOCHS * len(self.SUBGRAPHS) + 1,))

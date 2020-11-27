@@ -2,10 +2,10 @@ import matlab.engine
 import numpy as np
 
 
-def gen_graph(gtype, N, p):
+def gen_graph(g_type, N, p):
     eng = matlab.engine.start_matlab()
-    mix_matrix = np.asarray(eng.gen_graph(gtype, N, p))
-    print(mix_matrix)
+    eng.cd(r'src', nargout=0)
+    mix_matrix = np.asarray(eng.gen_graph(g_type, N, p))
     G = Graph(len(mix_matrix))
     for row in range(len(mix_matrix)):
         for col in range(len(mix_matrix)):
@@ -129,8 +129,6 @@ class Graph(object):
 
     # Add edges
     def add_edge(self, v1, v2):
-        if v1 == v2:
-            print("Same vertex %d and %d" % (v1, v2))
         # Assign uncoloured edges as -1
         self.adjMatrix[v1][v2] = -1
         self.adjMatrix[v2][v1] = -1

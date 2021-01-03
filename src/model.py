@@ -1,4 +1,6 @@
+from src import graph
 import numpy as np
+import matplotlib.pyplot as plt
 seed = 0
 
 
@@ -91,9 +93,82 @@ class DecentralizedTD:
         self.ERROR[iteration] = (np.linalg.norm(self.WEIGHT, ord='fro') ** 2) / self.NUM_AGENTS
         self.REWARD[iteration] = self.REWARD[iteration-1] + acc_reward
 
+    def train(self, verbose=0):
+        iteration = 1
+        for k in range(self.EPOCHS):
+            # eta = 100/(k + 3e5)/(1+model.DISCOUNT_GAMMA)
+            eta = 1e-6
+            if verbose >= 1:
+                print("  Subgraph epoch: {}".format(k))
+                print("  Stepsize: {}".format(eta))
+
+            for m, subgraph in enumerate(self.SUBGRAPHS):
+                if verbose >= 2:
+                    print("    Iteration: {}".format(iteration))
+                    print("    Subgraph: {}".format(m))
+
+                # find next state
+                cdf_prob_ssa = np.cumsum(self.mtx_prob_ssa[:, self.STATE])
+                # np.random.seed(seed)
+                rnd_tos = np.random.uniform(0, 1)
+                idx_state_next = np.where(rnd_tos <= cdf_prob_ssa)[0][0]
+
+                # parameter updates
+                self.update(
+                    iteration=iteration,
+                    subgraph=subgraph,
+                    phi=self.feature[:, self.STATE],
+                    phip=self.feature[:, idx_state_next],
+                    eta=eta
+                )
+                if verbose >= 2:
+                    print("    Error: {}".format(self.ERROR[iteration]))
+                self.STATE = idx_state_next
+                iteration += 1
+
     def reset(self):
         """Reset weights and errors."""
         np.random.seed(seed)
         self.WEIGHT = np.random.rand(self.DIM_FEATURES, self.NUM_AGENTS)
         self.ERROR = np.zeros((self.EPOCHS * len(self.SUBGRAPHS) + 1, ))
         self.REWARD = np.zeros((self.EPOCHS * len(self.SUBGRAPHS) + 1,))
+
+
+def plot_reward_error(model_decomposed, model_vanilla):
+    figure, axs = plt.subplots(2)
+    axs[0].plot(model_decomposed.ERROR, label="decomposed")
+    axs[0].plot(model_vanilla.ERROR, label="vanilla")
+    axs[1].plot(model_decomposed.REWARD, label="decomposed")
+    axs[1].plot(model_vanilla.REWARD, label="vanilla")
+
+    axs[0].set(xlabel="iteration", ylabel="error")
+    axs[0].legend()
+    axs[1].set(xlabel="epoch", ylabel="reward")
+    axs[1].legend()
+    return figure
+
+
+if __name__ == '__main__':
+    # first curve: is original decentralized TD (vanilla curve)
+    # second curve: is our curve
+    num_agent = 10
+    mix_matrix, G = graph.gen_graph('ER', num_agent, 0.7)
+
+    decomposed = graph.decompose(mix_matrix, G)
+    subgraphs = []
+    for graph in decomposed:
+        subgraphs.append(np.asarray(graph.adjMatrix))
+
+    print("Training decomposed graph")
+    td_model_decomposed = DecentralizedTD(subgraphs)
+    td_model_decomposed.train(verbose=1)
+
+    print("Training vanilla graph")
+    td_model_vanilla = DecentralizedTD([mix_matrix])
+    td_model_vanilla.train(verbose=1)
+
+    fig = plot_reward_error(td_model_decomposed, td_model_vanilla)
+    fig.show()
+
+    print(td_model_vanilla.WEIGHT)
+    print(td_model_decomposed.WEIGHT)

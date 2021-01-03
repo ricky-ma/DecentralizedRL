@@ -4,7 +4,7 @@ import numpy as np
 
 def gen_graph(g_type, N, p):
     eng = matlab.engine.start_matlab()
-    eng.cd(r'src', nargout=0)
+    # eng.cd(r'src', nargout=0)
     mix_matrix = np.asarray(eng.gen_graph(g_type, N, p))
     G = Graph(len(mix_matrix))
     for row in range(len(mix_matrix)):
